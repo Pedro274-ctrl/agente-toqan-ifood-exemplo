@@ -8,7 +8,7 @@
 [[iFood](https://img.shields.io/badge/iFood-Move_2026-EB0029.svg)](https://ifood.com.br)
 [[Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Function%20Calling%20%7C%20SQLite-green.svg)](#stack)
 
-**Repo de portfólio** criado por Pedro Henrique — demonstração de AI Agents aplicado ao cenário real de restaurantes iFood, conforme anunciado no iFood Move 2026.
+**Repo de portfólio** criado por Pedro Henrique — demonstração de AI Agents aplicado ao cenário real.
 
 
 ## 🎬 Demo
