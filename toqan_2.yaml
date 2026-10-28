@@ -1,0 +1,22 @@
+name: ifood-operational-agent
+display_name: "Agente Operacional iFood - Exemplo"
+description: "Agente que diagnostica vendas, cancelamentos e avaliacoes para restaurantes parceiros iFood"
+version: 0.1.0
+runtime: python-3.11
+entrypoint: main:app
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  tools:
+    - consultar_vendas_por_produto
+    - diagnosticar_cancelamentos
+    - monitorar_avaliacoes
+    - analisar_gargalos
+permissions:
+  - ifood:read:orders
+  - ifood:read:reviews
+  - ifood:read:metrics
+triggers:
+  - type: chat
+  - type: webhook
+    event: order.canceled
