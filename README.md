@@ -148,4 +148,4 @@ Engenharia de Software - Estácio - 4º semestre - Conclusão Out/2028
 GitHub: @Pedro274-ctrl | LinkedIn: pedro-henrique-costa-0a8648260
 Marinha do Brasil - Analista de Suporte de Sistemas - Linux Debian/LAMP 99% uptime
 
-Projeto criado como demonstração de construção e operacionalização de modelos com ênfase em LLMs, para trilha AI Engineer do Programa GenAI iFood.
+Projeto criado como demonstração de construção e operacionalização de modelos com ênfase em LLMs.
