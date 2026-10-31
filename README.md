@@ -277,7 +277,7 @@ Este repo usa **100% dados fictícios** gerados via `seed_ficticio.py`. Nenhum d
 ## Autor
 
 **Pedro Henrique** - Rio de Janeiro
-- GitHub: [@274-ctrl](https://github.com/274-ctrl)
+- GitHub: [@274-ctrl](https://github.com/Pedro274-ctrl)
 - Foco: AI Agents, GenAI, Function Calling, Python
 
 > Este é um projeto de portfólio educacional inspirado no Toqan do iFood Move 2026. Não é afiliado oficialmente ao iFood.
