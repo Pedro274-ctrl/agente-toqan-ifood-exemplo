@@ -2,7 +2,7 @@
 
 > Agente de consulta ao diretório de empresas condôminas usando RAG simples. Inspirado no padrão de orquestração da plataforma Toqan do iFood: Webhook -> LLM -> Base de dados -> Resposta automática.
 
-Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barra-space-center) adicionando camada de IA para consulta em linguagem natural.
+Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barraspace) adicionando camada de IA para consulta em linguagem natural.
 
 **Status:** Em desenvolvimento 
 
