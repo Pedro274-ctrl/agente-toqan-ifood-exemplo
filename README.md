@@ -1,4 +1,4 @@
-# Agente Toqan - Exemplo RAG - Barra Space Center
+# agente-diretorio-barra-space Exemplo RAG - Barra Space Center
 
 > Agente de consulta ao diretório de empresas condôminas usando RAG simples. Inspirado no padrão de orquestração da plataforma Toqan do iFood: Webhook -> LLM -> Base de dados -> Resposta automática.
 
