@@ -2,7 +2,7 @@
 
 > Agente de consulta ao diretório de empresas condôminas usando RAG simples. Inspirado no padrão de orquestração da plataforma Toqan do iFood: Webhook -> LLM -> Base de dados -> Resposta automática.
 
-Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barra-space-center) adicionando camada de IA para consulta em linguagem natural.
+Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barraspace) adicionando camada de IA para consulta em linguagem natural.
 
 **Status:** Em desenvolvimento 
 
@@ -14,34 +14,40 @@ No Barra Space Center, o diretório de empresas tem busca por filtros, mas exige
 
 ## Solução
 
-Agente que recebe pergunta em linguagem natural via webhook, usa OpenAI API para interpretar intenção, faz busca RAG no MySQL/PostgreSQL no diretório de condôminos e retorna resposta automática via API (pronto para integrar com Email/WhatsApp).
+Agente que recebe pergunta em linguagem natural via webhook e responde em três etapas:
+
+1. **Extração de intenção:** o LLM converte a pergunta em filtros estruturados (`categoria` + `termos`) com saída JSON. Se a OpenAI falhar, um fallback local usa todos os termos relevantes, sem acentos e pontuação.
+2. **Recuperação (RAG):** busca parametrizada no MySQL, apenas no diretório de condôminos ativos.
+3. **Geração:** o LLM responde com base **apenas** no contexto recuperado, sem inventar empresas, e a API devolve as fontes usadas (pronto para integrar com Email/WhatsApp).
 
 Fluxo no padrão Toqan:
 
 ```mermaid
 flowchart LR
-    A[Webhook: Pergunta do usuário] --> B[FastAPI + Validação]
-    B --> C[OpenAI API - Interpretação + RAG]
+    A[Webhook: Pergunta do usuário] --> B[FastAPI + Validação Pydantic]
+    B --> C[OpenAI API - Extração de filtros JSON]
     C --> D[MySQL - Diretório de Condôminos]
-    D --> E[Resposta formatada + Log]
-    E --> F[Email / WhatsApp API]
+    D --> E[OpenAI API - Resposta com base no contexto]
+    E --> F[Resposta + Fontes + Log]
+    F --> G[Email / WhatsApp API]
     style C fill:#00BFFF,stroke:#001F3F,color:#fff
+    style E fill:#00BFFF,stroke:#001F3F,color:#fff
 ```
 
 ## Tecnologias
 
 - **Backend:** Python, FastAPI, REST API
-- **IA:** OpenAI API, Prompt Engineering, RAG simples com busca no banco
+- **IA:** OpenAI API, Prompt Engineering, saída estruturada (JSON), RAG simples com busca no banco
 - **Banco:** MySQL (compatível com schema do Barra Space Center) / PostgreSQL
 - **Automação:** Pronto para orquestração com n8n, Make, Zapier
-- **Outros:** python-dotenv, mysql-connector-python
+- **Outros:** Pydantic, python-dotenv, mysql-connector-python
 
 ## Estrutura
 
 ```
 agente-toqan-ifood-exemplo/
-├── app.py                 # FastAPI + endpoint /consulta
-├── requirements.txt        # Dependências
+├── app.py                 # FastAPI: extração de filtros, busca e resposta (/consulta, /health)
+├── requirements.txt       # Dependências
 ├── .env.example           # Modelo de variáveis de ambiente
 ├── .env                   # Local (ignorado pelo Git)
 ├── banco_exemplo.sql      # Exemplo de tabela condôminos para teste
@@ -54,7 +60,7 @@ agente-toqan-ifood-exemplo/
 ### Requisitos
 
 - Python 3.10+
-- MySQL ou PostgreSQL com tabela de condôminos (pode usar `banco.sql` do Barra Space)
+- MySQL ou PostgreSQL com tabela de condôminos (pode usar `banco.sql` do Barra Space ou o `banco_exemplo.sql` deste repo)
 - Chave OpenAI API
 
 ### Instalação
@@ -84,6 +90,8 @@ API sobe em `http://localhost:8000`
 
 Documentação automática: `http://localhost:8000/docs`
 
+Health check: `http://localhost:8000/health`
+
 ## Exemplo de uso
 
 **Request:**
@@ -101,11 +109,15 @@ POST /consulta
 ```json
 {
   "pergunta": "Quais empresas de tecnologia estão ativas no Barra Space?",
-  "resposta": "Encontrei 3 empresas de tecnologia ativas: Empresa A - Sala 101, Empresa B - Sala 205...",
-  "fontes": ["condominos.id 12, 15, 23"],
-  "tempo_ms": 1240
+  "resposta": "Encontrei 1 empresa de tecnologia ativa: Empresa Exemplo Tech - Sala 101 - contato@exemplotech.com",
+  "filtros": {"termos": [], "categoria": "Tecnologia", "origem": "llm"},
+  "fontes": ["condominos.id 1"],
+  "tempo_ms": 1240,
+  "usuario": "pedro@exemplo.com"
 }
 ```
+
+O campo `filtros` mostra o que o LLM entendeu da pergunta. `origem` indica se os filtros vieram do LLM (`llm`) ou do fallback local (`local`).
 
 **Teste via curl:**
 
@@ -129,7 +141,9 @@ Export do workflow n8n será adicionado em `n8n-workflow-barra-space` repo.
 
 - Variáveis sensíveis em .env (ignorado pelo Git)
 - Consultas parametrizadas com mysql-connector (proteção SQL Injection)
-- Validação de payload com Pydantic
+- Validação de payload com Pydantic (pergunta entre 3 e 500 caracteres)
+- Filtros gerados pelo LLM são sanitizados e limitados antes de chegar ao banco
+- Erros internos registrados em log, sem expor detalhes ao usuário
 - Chave OpenAI nunca versionada
 
 ## Roadmap
@@ -137,6 +151,10 @@ Export do workflow n8n será adicionado em `n8n-workflow-barra-space` repo.
 - [x] FastAPI com endpoint /consulta
 - [x] Integração OpenAI API + busca MySQL
 - [x] RAG simples no diretório de condôminos
+- [x] Extração de intenção com LLM (saída JSON: categoria + termos)
+- [x] Fallback local de busca por todos os termos relevantes
+- [x] Endpoint /health e logs de consulta
+- [ ] Testes automatizados com pytest
 - [ ] Adicionar embeddings com LlamaIndex para busca vetorial
 - [ ] Workflow n8n completo com Email/WhatsApp
 - [ ] Deploy com Docker
@@ -148,4 +166,4 @@ Engenharia de Software - Estácio - 4º semestre - Conclusão Out/2028
 GitHub: @Pedro274-ctrl | LinkedIn: pedro-henrique-costa-0a8648260
 Marinha do Brasil - Analista de Suporte de Sistemas - Linux Debian/LAMP 99% uptime
 
-Projeto criado como demonstração de construção e operacionalização de modelos com ênfase em LLMs, para trilha AI Engineer do Programa GenAI iFood.
+Projeto criado como demonstração de construção e operacionalização de modelos com ênfase em LLMs.
