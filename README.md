@@ -1,286 +1,151 @@
-# agente-toqan-ifood-exemplo
-### Agente Inteligente para Restaurantes iFood usando Toqan + Function Calling
+# Agente Toqan - Exemplo RAG - Barra Space Center
 
-> Exemplo prático de como criar um AI Agent no ecossistema **Toqan (iFood / Prosus)** que responde perguntas de operação em linguagem natural: vendas, cancelamentos, avaliações e gargalos.
+> Agente de consulta ao diretório de empresas condôminas usando RAG simples. Inspirado no padrão de orquestração da plataforma Toqan do iFood: Webhook -> LLM -> Base de dados -> Resposta automática.
 
-[[Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[[Toqan](https://img.shields.io/badge/Toqan-Agent-red.svg)](https://toqan.ai)
-[[iFood](https://img.shields.io/badge/iFood-Move_2026-EB0029.svg)](https://ifood.com.br)
-[[Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Function%20Calling%20%7C%20SQLite-green.svg)](#stack)
+Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barra-space-center) adicionando camada de IA para consulta em linguagem natural.
 
-**Repo de portfólio** criado por Pedro Henrique — demonstração de AI Agents aplicado ao cenário real.
-
-
-## 🎬 Demo
-
-![Demo](docs/demo.gif)
-
-> Demo real do agente rodando localmente sem chave OpenAI (modo fallback). 5 perguntas clássicas do dono de restaurante iFood.
-
-```bash
-python demo.py
-```
-
-
+**Status:** Em desenvolvimento - para portfólio GenAI iFood Trilha AI Engineer
 
 ---
 
-## O que é o Toqan?
+## Problema
 
-O **Toqan** é a plataforma de IA generativa da Prosus / iFood lançada oficialmente em 17 de setembro no iFood Move 2026. Já são **50k+ restaurantes** cadastrados na primeira semana. Ele conecta com segurança todos os sistemas internos do iFood e serviços externos autorizados para criar agentes.
+No Barra Space Center, o diretório de empresas tem busca por filtros, mas exige navegação manual. Perguntas como "Quais empresas de tecnologia estão ativas?" ou "Mostra contato da empresa X" ainda dependem de busca manual.
 
-Este repo simula **como você criaria um agente Toqan** localmente, usando o mesmo padrão: Agente + Tools (Function Calling) + Dados.
+## Solução
 
-## O que este agente faz?
+Agente que recebe pergunta em linguagem natural via webhook, usa OpenAI API para interpretar intenção, faz busca RAG no MySQL/PostgreSQL no diretório de condôminos e retorna resposta automática via API (pronto para integrar com Email/WhatsApp).
 
-O dono do restaurante pergunta em linguagem natural e o agente decide qual função chamar:
-
-| Pergunta do usuário | Função acionada | O que retorna |
-| :--- | :--- | :--- |
-| "Quanto vendi de chopp ontem?" | `consultar_vendas_por_produto` | Vendas + ticket médio |
-| "Por que meus cancelamentos subiram?" | `diagnosticar_cancelamentos` | Top motivos + horário crítico |
-| "Como estão minhas avaliações?" | `monitorar_avaliacoes` | NPS, pratos com nota baixa |
-| "Qual meu gargalo operacional hoje?" | `analisar_gargalos` | Tempo de preparo, fila |
-
-Resposta final sempre em linguagem natural: _"Ontem você vendeu 87 chopes (R$ 1.305,00). Cancelamentos subiram 23% por falta de entregador das 19h-21h."_
-
----
-
-## Arquitetura
-
-### Fluxo do Agente
+Fluxo no padrão Toqan:
 
 ```mermaid
-flowchart TD
-    A[Usuario: Pergunta em Linguagem Natural] --> B[Agente Toqan - LLM com Function Calling]
-    B --> C{Qual a intencao?}
-    C -->|Vendas| D[Tool: consultar_vendas_por_produto]
-    C -->|Cancelamentos| E[Tool: diagnosticar_cancelamentos]
-    C -->|Avaliacoes| F[Tool: monitorar_avaliacoes]
-    C -->|Gargalo| G[Tool: analisar_gargalos]
-    
-    D --> H[(SQLite - Dados Ficticios iFood)]
-    E --> H
-    F --> H
-    G --> H
-    
-    H --> I[Resultado da Query]
-    I --> B
-    B --> J[Resposta Natural + Insight + Acao]
-
-    style B fill:#EB0029,stroke:#fff,color:#fff
-    style J fill:#2ecc71,stroke:#fff,color:#fff
+flowchart LR
+    A[Webhook: Pergunta do usuário] --> B[FastAPI + Validação]
+    B --> C[OpenAI API - Interpretação + RAG]
+    C --> D[MySQL - Diretório de Condôminos]
+    D --> E[Resposta formatada + Log]
+    E --> F[Email / WhatsApp API]
+    style C fill:#00BFFF,stroke:#001F3F,color:#fff
 ```
 
-### Sequência de Function Calling
+## Tecnologias
 
-```mermaid
-sequenceDiagram
-    participant U as Usuário
-    participant Agent as Agente Toqan
-    participant LLM as OpenAI/Claude API
-    participant Tool as Tools (Python)
-    participant DB as SQLite
+- **Backend:** Python, FastAPI, REST API
+- **IA:** OpenAI API, Prompt Engineering, RAG simples com busca no banco
+- **Banco:** MySQL (compatível com schema do Barra Space Center) / PostgreSQL
+- **Automação:** Pronto para orquestração com n8n, Make, Zapier
+- **Outros:** python-dotenv, mysql-connector-python
 
-    U->>Agent: "Quanto vendi no último domingo?"
-    Agent->>LLM: Prompt + Definições das Tools
-    LLM-->>Agent: Chamar consultar_vendas(produto, data)
-    Agent->>Tool: Executa função
-    Tool->>DB: SELECT SUM(valor) FROM vendas WHERE...
-    DB-->>Tool: 87 vendas, R$ 1.305,00
-    Tool-->>Agent: Resultado JSON
-    Agent->>LLM: Resultado + Contexto para resposta
-    LLM-->>Agent: "No último domingo você vendeu..."
-    Agent-->>U: Resposta final em PT-BR
-```
-
----
-
-## Estrutura pronta para colar o código
-
-Crie o repo com esta estrutura exata:
+## Estrutura
 
 ```
 agente-toqan-ifood-exemplo/
-├── README.md
-├── requirements.txt
-├── .env.example
-├── toqan.yaml              # Manifesto do agente no padrão Toqan
-├── main.py                 # FastAPI + Orquestrador do agente
-├── /src
-│   ├── /agent
-│   │   ├── prompt.py       # System prompt com contexto iFood
-│   │   ├── orchestrator.py # Lógica de Function Calling
-│   │   └── toqan_client.py # Cliente simulado Toqan SDK
-│   ├── /tools
-│   │   ├── vendas.py       # consultar_vendas_por_produto
-│   │   ├── cancelamentos.py# diagnosticar_cancelamentos
-│   │   ├── avaliacoes.py   # monitorar_avaliacoes
-│   │   └── gargalos.py     # analisar_gargalos
-│   ├── /api
-│   │   └── routes.py       # Endpoints /chat /metrics /health
-│   └── /data
-│       ├── schema.sql      # Tabelas: vendas, pedidos, avaliacoes
-│       ├── seed_ficticio.py# Gera 500 vendas fictícias (LGPD safe)
-│       └── database.db     # SQLite (gitignore)
-├── /tests
-│   ├── test_vendas.py
-│   ├── test_agent.py
-│   └── test_tools.py
-└── /docs
-    └── demo.gif
+├── app.py                 # FastAPI + endpoint /consulta
+├── requirements.txt        # Dependências
+├── .env.example           # Modelo de variáveis de ambiente
+├── .env                   # Local (ignorado pelo Git)
+├── banco_exemplo.sql      # Exemplo de tabela condôminos para teste
+├── test_request.json      # Exemplo de payload para teste
+└── README.md
 ```
-
----
-
-## Stack
-
-**Core:** `Python 3.11`, `FastAPI`, `Toqan SDK (simulado)`, `OpenAI API / Anthropic API`, `Function Calling`, `SQLite`, `Pandas`
-
-**Conceitos:** `IA Generativa (GenAI)`, `AI Agents`, `Agentes Inteligentes`, `Engenharia de Prompts`, `Automações com IA`, `APIs REST`, `Evolução de Modelos`
-
----
 
 ## Como rodar localmente
 
+### Requisitos
+
+- Python 3.10+
+- MySQL ou PostgreSQL com tabela de condôminos (pode usar `banco.sql` do Barra Space)
+- Chave OpenAI API
+
+### Instalação
+
 ```bash
 # 1. Clonar
-git clone https://github.com/274-ctrl/agente-toqan-ifood-exemplo.git
+git clone https://github.com/Pedro274-ctrl/agente-toqan-ifood-exemplo.git
 cd agente-toqan-ifood-exemplo
 
-# 2. Ambiente
+# 2. Criar venv
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate  # Windows
+
+# 3. Instalar dependências
 pip install -r requirements.txt
 
-# 3. Variáveis
+# 4. Configurar .env
 cp .env.example .env
-# Edite com sua OPENAI_API_KEY ou ANTHROPIC_API_KEY
-
-# 4. Banco fictício
-python src/data/seed_ficticio.py
+# Edite: OPENAI_API_KEY, DB_HOST, DB_NAME, DB_USER, DB_PASS
 
 # 5. Rodar API
-uvicorn main:app --reload --port 8000
-
-# Testar
-python demo.py  # roda as 5 perguntas com GIF pronto
-
-curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '{"pergunta": "quanto vendi de chopp ontem?"}'
+uvicorn app:app --reload --port 8000
 ```
 
-### requirements.txt sugerido
-```
-fastapi
-uvicorn
-openai
-anthropic
-pandas
-pydantic
-python-dotenv
-pytest
-```
+API sobe em `http://localhost:8000`
 
-### toqan.yaml - Manifesto do Agente
-```yaml
-name: ifood-operational-agent
-display_name: "Agente Operacional iFood - Exemplo"
-description: "Agente que diagnostica vendas, cancelamentos e avaliações para restaurantes parceiros"
-version: 0.1.0
-runtime: python-3.11
-entrypoint: main:app
+Documentação automática: `http://localhost:8000/docs`
 
-llm:
-  provider: openai
-  model: gpt-4o-mini
-  tools:
-    - consultar_vendas_por_produto
-    - diagnosticar_cancelamentos
-    - monitorar_avaliacoes
-    - analisar_gargalos
+## Exemplo de uso
 
-permissions:
-  - ifood:read:orders
-  - ifood:read:reviews
-  - ifood:read:metrics
+**Request:**
 
-triggers:
-  - type: chat
-  - type: webhook
-    event: order.canceled
-```
-
-### main.py - Esqueleto
-```python
-from fastapi import FastAPI
-from src.agent.orchestrator import processar_pergunta
-
-app = FastAPI(title="Agente Toqan iFood - Exemplo")
-
-@app.post("/chat")
-async def chat(pergunta: str):
-    resposta = await processar_pergunta(pergunta)
-    return {"resposta": resposta}
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "agent": "toqan-ifood-exemplo"}
-```
-
----
-
-## Exemplo de Tool com Function Calling
-
-```python
-# src/tools/vendas.py
-def consultar_vendas_por_produto(produto: str, data_inicio: str, data_fim: str):
-    # Query real no SQLite com dados fictícios
-    # Retorna JSON para o LLM formular resposta
-    return {"qtd": 87, "total": 1305.00, "produto": produto}
-```
-
-Definição da Tool para OpenAI:
 ```json
+POST /consulta
 {
-  "type": "function",
-  "function": {
-    "name": "consultar_vendas_por_produto",
-    "description": "Consulta vendas de um produto em um período",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "produto": {"type": "string"},
-        "data_inicio": {"type": "string", "format": "date"},
-        "data_fim": {"type": "string", "format": "date"}
-      }
-    }
-  }
+  "pergunta": "Quais empresas de tecnologia estão ativas no Barra Space?",
+  "usuario": "pedro@exemplo.com"
 }
 ```
 
----
+**Resposta:**
+
+```json
+{
+  "pergunta": "Quais empresas de tecnologia estão ativas no Barra Space?",
+  "resposta": "Encontrei 3 empresas de tecnologia ativas: Empresa A - Sala 101, Empresa B - Sala 205...",
+  "fontes": ["condominos.id 12, 15, 23"],
+  "tempo_ms": 1240
+}
+```
+
+**Teste via curl:**
+
+```bash
+curl -X POST http://localhost:8000/consulta \
+  -H "Content-Type: application/json" \
+  -d @test_request.json
+```
+
+## Integração com n8n (próximo passo)
+
+Este agente foi desenhado para ser orquestrado via n8n:
+
+```
+Webhook n8n (pergunta) -> HTTP Request para /consulta -> If (tem resultado) -> Email/WhatsApp API
+```
+
+Export do workflow n8n será adicionado em `n8n-workflow-barra-space` repo.
+
+## Segurança
+
+- Variáveis sensíveis em .env (ignorado pelo Git)
+- Consultas parametrizadas com mysql-connector (proteção SQL Injection)
+- Validação de payload com Pydantic
+- Chave OpenAI nunca versionada
 
 ## Roadmap
 
-- [x] Estrutura base + README
-- [ ] Implementar 4 tools com dados fictícios
-- [ ] Adicionar testes pytest (cobertura > 80%)
-- [ ] Integrar Toqan SDK real quando liberado para parceiros
-- [ ] Dashboard com Streamlit para demo
-
-## LGPD
-
-Este repo usa **100% dados fictícios** gerados via `seed_ficticio.py`. Nenhum dado real de restaurante ou cliente iFood.
-
----
+- [x] FastAPI com endpoint /consulta
+- [x] Integração OpenAI API + busca MySQL
+- [x] RAG simples no diretório de condôminos
+- [ ] Adicionar embeddings com LlamaIndex para busca vetorial
+- [ ] Workflow n8n completo com Email/WhatsApp
+- [ ] Deploy com Docker
 
 ## Autor
 
-**Pedro Henrique** - Rio de Janeiro
-- GitHub: [@274-ctrl](https://github.com/Pedro274-ctrl)
-- Foco: AI Agents, GenAI, Function Calling, Python
+Pedro Henrique Costa Santos
+Engenharia de Software - Estácio - 4º semestre - Conclusão Out/2028
+GitHub: @Pedro274-ctrl | LinkedIn: pedro-henrique-costa-0a8648260
+Marinha do Brasil - Analista de Suporte de Sistemas - Linux Debian/LAMP 99% uptime
 
-> Este é um projeto de portfólio educacional inspirado no Toqan do iFood Move 2026. Não é afiliado oficialmente ao iFood.
-
-### Topics para GitHub
-`toqan` `ifood` `ai-agents` `genai` `function-calling` `fastapi` `python` `openai-api` `anthropic` `sales-analytics` `chatbot`
+Projeto criado como demonstração de construção e operacionalização de modelos com ênfase em LLMs, para trilha AI Engineer do Programa GenAI iFood.
