@@ -4,7 +4,7 @@
 
 Este projeto complementa o [Barra Space Center](https://github.com/Pedro274-ctrl/barra-space-center) adicionando camada de IA para consulta em linguagem natural.
 
-**Status:** Em desenvolvimento - para portfólio GenAI iFood Trilha AI Engineer
+**Status:** Em desenvolvimento 
 
 ---
 
